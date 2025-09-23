@@ -1,16 +1,83 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceder a la Cámara</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>Bot de Arbitraje USDT (Demo)</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #eee; text-align: center; padding: 20px; }
+    h1 { color: #0f0; }
+    #alerts { margin-top: 20px; }
+    .alert { background: #222; border: 1px solid #0f0; padding: 10px; margin: 10px; border-radius: 8px; }
+  </style>
 </head>
 <body>
-    <h1>Acceder a la Cámara</h1>
-    <button id="startButton">Iniciar Cámara</button>
-    <video id="video" autoplay></video>
+  <h1>🚀 Monitor de Arbitraje USDT</h1>
+  <p>Consultando precios cada 30 segundos...</p>
+  <div id="alerts"></div>
 
-    <script src="script.js"></script>
+  <!-- Sonido de alerta -->
+  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+
+  <script>
+    const THRESHOLD = 1.5; // porcentaje mínimo de spread
+
+    async function getSpotPrice(symbol="USDTUSDT") {
+      const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return parseFloat(data.price);
+    }
+
+    async function getP2PPrice() {
+      const url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search";
+      const payload = {
+        asset: "USDT",
+        fiat: "ARS",
+        page: 1,
+        rows: 5,
+        tradeType: "SELL"
+      };
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const avg = data.data.reduce((s,x)=>s+parseFloat(x.adv.price),0)/data.data.length;
+      return avg;
+    }
+
+    function playBeep() {
+      const beep = document.getElementById("beep");
+      beep.play();
+    }
+
+    async function checkArbitrage() {
+      try {
+        const spot = await getSpotPrice("USDTUSDT");
+        const p2p = await getP2PPrice();
+        const spread = (p2p - spot) / spot * 100;
+
+        const msg = `P2P: ${p2p.toFixed(2)} ARS | Spot: ${spot.toFixed(2)} | Spread: ${spread.toFixed(2)}%`;
+
+        const alertsDiv = document.getElementById("alerts");
+        const el = document.createElement("div");
+        el.className = "alert";
+        el.textContent = msg;
+        alertsDiv.prepend(el);
+
+        if (spread > THRESHOLD) {
+          playBeep();
+        }
+
+      } catch (e) {
+        console.error("Error:", e);
+      }
+    }
+
+    // correr cada 30s
+    checkArbitrage();
+    setInterval(checkArbitrage, 30000);
+  </script>
 </body>
 </html>
