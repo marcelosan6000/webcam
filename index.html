@@ -54,7 +54,7 @@
 
     async function checkArbitrage() {
       try {
-        const spot = await getSpotPrice("USDTUSDT");
+        const spot = await getSpotPrice("USDTARS");
         const p2p = await getP2PPrice();
         const spread = (p2p - spot) / spot * 100;
 
@@ -81,4 +81,5 @@
   </script>
 </body>
 </html>
+
 
