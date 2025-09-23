@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot de Arbitraje USDT</title>
+    <title>Monitor de Arbitraje USDT/ARS</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -37,7 +37,7 @@
             font-weight: 700;
         }
 
-        .config-panel {
+        .config-panel, .api-status, .status-panel, .price-comparison, .opportunities, .log-panel, .cors-notice, .notification {
             background: #f8f9fa;
             border-radius: 15px;
             padding: 25px;
@@ -97,16 +97,14 @@
             box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
         }
 
-        .btn-stop {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
         }
 
-        .status-panel {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
+        .btn-stop {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
         }
 
         .status-grid {
@@ -126,6 +124,45 @@
             font-size: 1.5rem;
             font-weight: 700;
             margin-top: 10px;
+        }
+
+        .api-status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+        }
+
+        .api-status-indicator.error {
+            background: #e74c3c;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .price-table th,
+        .price-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .price-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .price-positive {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .price-negative {
+            color: #e74c3c;
+            font-weight: bold;
         }
 
         .opportunities {
@@ -149,6 +186,11 @@
             animation: bounce 1s infinite;
         }
 
+        .opportunity-card.excellent {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            animation: glow 1s infinite alternate;
+        }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.02); }
@@ -161,12 +203,9 @@
             60% { transform: translateY(-5px); }
         }
 
-        .price-chart {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            text-align: center;
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(231, 76, 60, 0.5); }
+            to { box-shadow: 0 0 30px rgba(231, 76, 60, 0.8); }
         }
 
         .log-panel {
@@ -197,6 +236,11 @@
             background: rgba(243, 156, 18, 0.1);
         }
 
+        .log-entry.error {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
         .notification {
             position: fixed;
             top: 20px;
@@ -209,10 +253,47 @@
             z-index: 1000;
             transform: translateX(400px);
             transition: transform 0.3s;
+            max-width: 350px;
         }
 
         .notification.show {
             transform: translateX(0);
+        }
+
+        .notification.high-profit {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .notification.excellent {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cors-notice {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .cors-notice h3 {
+            margin-bottom: 10px;
         }
 
         @media (max-width: 768px) {
@@ -231,46 +312,41 @@
             .status-grid {
                 grid-template-columns: 1fr;
             }
-        }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+            .price-table {
+                font-size: 14px;
+            }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            .notification {
+                right: 10px;
+                max-width: 300px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Bot de Arbitraje USDT</h1>
+        <h1>🚀 Monitor de Arbitraje USDT - Versión Web</h1>
+        
+        <div class="cors-notice">
+            <h3>⚠️ Importante: Configuración CORS</h3>
+            <p>Para que funcione, necesitas una extensión como "CORS Unblock" o usar un proxy.</p>
+        </div>
         
         <div class="config-panel">
-            <h3>⚙️ Configuración</h3>
+            <h3>⚙️ Configuración del Monitor</h3>
             <div class="config-row">
                 <div class="config-item">
-                    <label>Diferencia Mínima (%)</label>
-                    <input type="number" id="minDiff" value="0.5" step="0.1" min="0.1">
-                </div>
-                <div class="config-item" id="customTime" style="display:none;">
-                    <label>Horario (HH:MM - HH:MM)</label>
-                    <input type="text" id="customHours" placeholder="09:00-18:00">
+                    <label>Comisión de Trading (%)</label>
+                    <input type="number" id="tradeFee" value="0.1" step="0.01" min="0.01">
                 </div>
                 <div class="config-item">
-                    <label>Gastos Administrativos (%)</label>
-                    <input type="number" id="adminFees" value="0.2" step="0.05" min="0.05">
+                    <label>Costo de Retiro (USDT)</label>
+                    <input type="number" id="withdrawalFee" value="0.8" step="0.1" min="0">
                 </div>
                 <div class="config-item">
                     <label>Margen de Ganancia Mínimo (%)</label>
-                    <input type="number" id="minProfit" value="0.3" step="0.1" min="0.1">
+                    <input type="number" id="minProfit" value="0.5" step="0.1" min="0.1">
                 </div>
             </div>
             <div class="config-row">
@@ -281,15 +357,14 @@
                         <option value="60" selected>1 minuto</option>
                         <option value="300">5 minutos</option>
                         <option value="900">15 minutos</option>
-                        <option value="1800">30 minutos</option>
                     </select>
                 </div>
                 <div class="config-item">
-                    <label>Horario de Consulta</label>
-                    <select id="schedule">
-                        <option value="always" selected>Siempre activo</option>
-                        <option value="business">Horario comercial (9-18 hs)</option>
-                        <option value="custom">Personalizado</option>
+                    <label>Usar Proxy CORS</label>
+                    <select id="corsProxy">
+                        <option value="https://api.allorigins.win/raw?url=">AllOrigins (Recomendado)</option>
+                        <option value="https://cors-anywhere.herokuapp.com/">CORS Anywhere</option>
+                        <option value="">Sin Proxy (Directo)</option>
                     </select>
                 </div>
                 <div class="config-item">
@@ -302,22 +377,41 @@
             </div>
             <div class="config-row">
                 <button class="btn" onclick="startBot()">
-                    <span id="startText">🚀 Iniciar Bot</span>
+                    <span id="startText">🚀 Iniciar Monitor</span>
                 </button>
                 <button class="btn btn-stop" onclick="stopBot()">
-                    ⏹️ Detener Bot
-                </button>
-                <button class="btn" onclick="testNotification()">
-                    🔔 Probar Notificación
-                </button>
-                <button class="btn" onclick="testSound()">
-                    🔊 Probar Sonido
+                    ⏹️ Detener Monitor
                 </button>
             </div>
         </div>
 
+        <div class="api-status">
+            <h3>📡 Estado de las APIs</h3>
+            <div class="api-item">
+                <div>
+                    <strong>Binance P2P (Compra)</strong>
+                    <div>Último precio: <span id="binanceBuyPrice">--</span></div>
+                </div>
+                <div class="api-status-indicator" id="binanceBuyStatus"></div>
+            </div>
+            <div class="api-item">
+                <div>
+                    <strong>Binance P2P (Venta)</strong>
+                    <div>Último precio: <span id="binanceSellPrice">--</span></div>
+                </div>
+                <div class="api-status-indicator" id="binanceSellStatus"></div>
+            </div>
+            <div class="api-item">
+                <div>
+                    <strong>Cotización USD/ARS Blue</strong>
+                    <div>Último precio: <span id="blueUSDPrice">--</span></div>
+                </div>
+                <div class="api-status-indicator" id="usdStatus"></div>
+            </div>
+        </div>
+
         <div class="status-panel">
-            <h3>📊 Estado del Bot</h3>
+            <h3>📊 Estado del Monitor</h3>
             <div class="status-grid">
                 <div class="status-item">
                     <div>Estado</div>
@@ -338,28 +432,41 @@
             </div>
         </div>
 
-        <div class="price-chart">
-            <h3>💰 Precios Actuales USDT</h3>
-            <div class="status-grid">
-                <div class="status-item">
-                    <div>USDT/ARS (P2P)</div>
-                    <div class="status-value" id="usdtPrice">Cargando...</div>
-                </div>
-                <div class="status-item">
-                    <div>USD/ARS (Oficial)</div>
-                    <div class="status-value" id="usdPrice">Cargando...</div>
-                </div>
-                <div class="status-item">
-                    <div>Diferencia</div>
-                    <div class="status-value" id="priceDiff">---%</div>
-                </div>
-            </div>
+        <div class="price-comparison">
+            <h3>💰 Comparación de Precios USDT/ARS</h3>
+            <table class="price-table">
+                <thead>
+                    <tr>
+                        <th>Fuente</th>
+                        <th>Compra (ARS)</th>
+                        <th>Venta (ARS)</th>
+                        <th>Spread</th>
+                        <th>Liquidez Estimada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="binanceP2PRow">
+                        <td><strong>Binance P2P</strong></td>
+                        <td id="binanceBuyDisplay">--</td>
+                        <td id="binanceSellDisplay">--</td>
+                        <td id="binanceSpread">--</td>
+                        <td id="binanceLiquidity">--</td>
+                    </tr>
+                    <tr id="blueRow">
+                        <td><strong>USD Blue</strong></td>
+                        <td id="blueBuyDisplay">--</td>
+                        <td id="blueSellDisplay">--</td>
+                        <td>--</td>
+                        <td>--</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="opportunities">
             <h3>💡 Oportunidades de Arbitraje</h3>
             <div id="opportunitiesList">
-                <p style="text-align:center; color:#666;">No hay oportunidades detectadas aún...</p>
+                <p style="text-align:center; color:#666;">El monitor buscará oportunidades automáticamente...</p>
             </div>
         </div>
 
@@ -367,7 +474,7 @@
             <h3 style="color:#ecf0f1; margin-bottom:15px;">📝 Registro de Actividad</h3>
             <div id="logContainer">
                 <div class="log-entry">
-                    [${new Date().toLocaleTimeString()}] Bot inicializado - Listo para comenzar
+                    <span id="initLogTime"></span> Monitor de Arbitraje inicializado.
                 </div>
             </div>
         </div>
@@ -379,402 +486,325 @@
     </div>
 
     <script>
-        class USDTArbitrageBot {
+        class USDTArbitrageMonitor {
             constructor() {
                 this.isRunning = false;
                 this.intervalId = null;
                 this.opportunityCount = 0;
-                this.prices = {
-                    usdt: 0,
-                    usd: 0
-                };
                 this.nextCheckTime = null;
+                this.apiData = {
+                    binanceBuy: { price: 0, status: 'unknown', lastUpdate: null, bestPrice: 0, liquidityEstimate: 0 },
+                    binanceSell: { price: 0, status: 'unknown', lastUpdate: null, bestPrice: 0, liquidityEstimate: 0 },
+                    blueUSD: { buyPrice: 0, sellPrice: 0, status: 'unknown', lastUpdate: null }
+                };
                 
                 this.initializeEventListeners();
-                this.loadPricesOnInit();
+                this.logMessage('Monitor de Arbitraje inicializado', 'success');
             }
 
             initializeEventListeners() {
-                document.getElementById('schedule').addEventListener('change', (e) => {
-                    const customTime = document.getElementById('customTime');
-                    if (e.target.value === 'custom') {
-                        customTime.style.display = 'block';
-                    } else {
-                        customTime.style.display = 'none';
-                    }
-                });
-
-                // Solicitar permisos de notificación al cargar
                 if ('Notification' in window && Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
             }
 
-            async loadPricesOnInit() {
-                this.logMessage('Cargando precios iniciales...');
-                await this.checkPrices();
+            async getBinanceP2PPrice(tradeType) {
+                try {
+                    const corsProxy = document.getElementById('corsProxy').value;
+                    const url = corsProxy + 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
+                    
+                    const payload = {
+                        asset: "USDT",
+                        fiat: "ARS",
+                        merchantCheck: false,
+                        page: 1,
+                        payTypes: [],
+                        publisherType: null,
+                        rows: 10,
+                        tradeType: tradeType
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success && data.data && data.data.length > 0) {
+                        const ads = data.data;
+                        const prices = ads.map(ad => parseFloat(ad.adv.price));
+                        const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+                        const bestPrice = tradeType === 'BUY' ? Math.min(...prices) : Math.max(...prices);
+                        const totalAmount = ads.reduce((sum, ad) => sum + parseFloat(ad.adv.surplusAmount || 0), 0);
+                        
+                        return {
+                            price: avgPrice,
+                            bestPrice: bestPrice,
+                            liquidityEstimate: totalAmount,
+                            status: 'success'
+                        };
+                    } else {
+                        throw new Error('No data received from Binance P2P API');
+                    }
+                } catch (error) {
+                    this.logMessage('Error obteniendo precio ' + tradeType + ' de Binance P2P: ' + error.message, 'error');
+                    return { price: 0, bestPrice: 0, liquidityEstimate: 0, status: 'error' };
+                }
             }
 
-            async checkPrices() {
+            async getBlueUSDPrice() {
                 try {
-                    this.logMessage('Consultando precios...', 'info');
+                    const corsProxy = document.getElementById('corsProxy').value;
+                    const url = corsProxy + 'https://criptoya.com/api/dolar';
+                    const response = await fetch(url);
                     
-                    // Simular datos de precios (en producción usarías APIs reales)
-                    const usdtPrice = this.generateRealisticUSDTPrice();
-                    const usdPrice = await this.getUSDPrice();
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                    }
+                    const data = await response.json();
                     
-                    this.prices.usdt = usdtPrice;
-                    this.prices.usd = usdPrice;
+                    if (data.blue && data.blue.compra && data.blue.venta) {
+                        return {
+                            buyPrice: parseFloat(data.blue.compra),
+                            sellPrice: parseFloat(data.blue.venta),
+                            status: 'success'
+                        };
+                    } else {
+                        throw new Error('Invalid data format from Dolar Blue API');
+                    }
+                } catch (error) {
+                    this.logMessage('Error obteniendo cotización USD Blue: ' + error.message, 'error');
+                    return { buyPrice: 0, sellPrice: 0, status: 'error' };
+                }
+            }
+
+            async checkAllPrices() {
+                this.logMessage('Consultando APIs en tiempo real...', 'info');
+                
+                try {
+                    const binanceBuyPromise = this.getBinanceP2PPrice('BUY');
+                    const binanceSellPromise = this.getBinanceP2PPrice('SELL');
+                    const blueUSDPromise = this.getBlueUSDPrice();
                     
-                    this.updatePriceDisplay();
-                    this.calculateArbitrageOpportunity();
-                    
-                    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                    const binanceBuy = await binanceBuyPromise;
+                    const binanceSell = await binanceSellPromise;
+                    const blueUSD = await blueUSDPromise;
+
+                    this.apiData.binanceBuy = Object.assign({}, binanceBuy, { lastUpdate: new Date() });
+                    this.apiData.binanceSell = Object.assign({}, binanceSell, { lastUpdate: new Date() });
+                    this.apiData.blueUSD = Object.assign({}, blueUSD, { lastUpdate: new Date() });
+
+                    this.updateUI();
+                    this.analyzeArbitrageOpportunities();
                     
                 } catch (error) {
-                    this.logMessage(`Error al consultar precios: ${error.message}`, 'error');
+                    this.logMessage('Error en consulta general: ' + error.message, 'error');
                 }
             }
 
-            generateRealisticUSDTPrice() {
-                // Simula precios USDT/ARS basados en valores reales + volatilidad
-                const basePrice = 1020;
-                const volatility = (Math.random() - 0.5) * 20;
-                return Math.round((basePrice + volatility) * 100) / 100;
-            }
+            updateUI() {
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
 
-            async getUSDPrice() {
-                // Simula precio USD/ARS oficial
-                const basePrice = 1000;
-                const volatility = (Math.random() - 0.5) * 5;
-                return Math.round((basePrice + volatility) * 100) / 100;
-            }
-
-            updatePriceDisplay() {
-                document.getElementById('usdtPrice').textContent = `$${this.prices.usdt.toFixed(2)}`;
-                document.getElementById('usdPrice').textContent = `$${this.prices.usd.toFixed(2)}`;
+                const binanceBuy = this.apiData.binanceBuy;
+                const binanceSell = this.apiData.binanceSell;
+                const blueUSD = this.apiData.blueUSD;
                 
-                const diff = ((this.prices.usdt - this.prices.usd) / this.prices.usd * 100);
-                document.getElementById('priceDiff').textContent = `${diff.toFixed(2)}%`;
-                document.getElementById('priceDiff').style.color = diff > 0 ? '#27ae60' : '#e74c3c';
+                document.getElementById('binanceBuyPrice').textContent = '$' + binanceBuy.price.toFixed(2);
+                document.getElementById('binanceBuyStatus').className = 'api-status-indicator ' + binanceBuy.status;
+                
+                document.getElementById('binanceSellPrice').textContent = '$' + binanceSell.price.toFixed(2);
+                document.getElementById('binanceSellStatus').className = 'api-status-indicator ' + binanceSell.status;
+                
+                document.getElementById('blueUSDPrice').textContent = '$' + blueUSD.sellPrice.toFixed(2);
+                document.getElementById('usdStatus').className = 'api-status-indicator ' + blueUSD.status;
+
+                document.getElementById('binanceBuyDisplay').textContent = '$' + binanceBuy.price.toFixed(2);
+                document.getElementById('binanceSellDisplay').textContent = '$' + binanceSell.price.toFixed(2);
+                
+                const binanceSpread = binanceBuy.price > 0 && binanceSell.price > 0 ? 
+                    ((binanceSell.price - binanceBuy.price) / binanceBuy.price * 100).toFixed(2) + '%' : '--';
+                document.getElementById('binanceSpread').textContent = binanceSpread;
+                document.getElementById('binanceLiquidity').textContent = binanceBuy.liquidityEstimate > 0 ? 
+                    '~$' + (binanceBuy.liquidityEstimate).toFixed(0) + ' USDT' : '--';
+                
+                document.getElementById('blueBuyDisplay').textContent = '$' + blueUSD.buyPrice.toFixed(2);
+                document.getElementById('blueSellDisplay').textContent = '$' + blueUSD.sellPrice.toFixed(2);
+
+                if (this.isRunning) {
+                    const interval = parseInt(document.getElementById('interval').value);
+                    const nextCheck = new Date(now.getTime() + interval * 1000);
+                    document.getElementById('nextCheck').textContent = nextCheck.toLocaleTimeString();
+                }
             }
 
-            calculateArbitrageOpportunity() {
-                const minDiff = parseFloat(document.getElementById('minDiff').value);
-                const adminFees = parseFloat(document.getElementById('adminFees').value);
+            analyzeArbitrageOpportunities() {
                 const minProfit = parseFloat(document.getElementById('minProfit').value);
+                const tradeFee = parseFloat(document.getElementById('tradeFee').value) / 100;
+                const withdrawalFee = parseFloat(document.getElementById('withdrawalFee').value);
                 
-                const priceDiff = ((this.prices.usdt - this.prices.usd) / this.prices.usd * 100);
-                const netProfit = priceDiff - adminFees;
+                const binanceBuy = this.apiData.binanceBuy;
+                const binanceSell = this.apiData.binanceSell;
+                const blueUSD = this.apiData.blueUSD;
                 
-                if (priceDiff >= minDiff && netProfit >= minProfit) {
-                    this.foundArbitrageOpportunity(priceDiff, netProfit, adminFees);
+                const opportunities = [];
+                
+                // Oportunidad 1: Binance P2P interno (Comprar a menor precio, vender a mayor)
+                if (binanceBuy.bestPrice > 0 && binanceSell.bestPrice > 0) {
+                    const profitGross = ((binanceSell.bestPrice - binanceBuy.bestPrice) / binanceBuy.bestPrice) * 100;
+                    const profitNet = profitGross - (tradeFee * 2) * 100; // Doble comisión
+                    
+                    if (profitNet >= minProfit) {
+                        opportunities.push({
+                            type: 'binance_internal',
+                            description: 'Comprar USDT barato en Binance P2P → Vender caro en Binance P2P',
+                            buyPrice: binanceBuy.bestPrice,
+                            sellPrice: binanceSell.bestPrice,
+                            netProfit: profitNet,
+                            estimatedLiquidity: Math.min(binanceBuy.liquidityEstimate, binanceSell.liquidityEstimate)
+                        });
+                    }
                 }
+                
+                // Oportunidad 2: Dólar Blue vs Binance P2P
+                // Flujo: Comprar dólar blue (en efectivo) -> Venderlo en Binance P2P
+                if (blueUSD.sellPrice > 0 && binanceSell.bestPrice > 0) {
+                    const profitGross = ((binanceSell.bestPrice - blueUSD.sellPrice) / blueUSD.sellPrice) * 100;
+                    const profitNet = profitGross - tradeFee * 100; // Solo comisión de venta en Binance
+                    
+                    if (profitNet >= minProfit) {
+                        opportunities.push({
+                            type: 'blue_to_binance',
+                            description: 'Comprar USD Blue → Vender en Binance P2P',
+                            buyPrice: blueUSD.sellPrice,
+                            sellPrice: binanceSell.bestPrice,
+                            netProfit: profitNet,
+                            estimatedLiquidity: binanceSell.liquidityEstimate
+                        });
+                    }
+                }
+                
+                this.displayOpportunities(opportunities);
             }
 
-            foundArbitrageOpportunity(priceDiff, netProfit, adminFees) {
-                this.opportunityCount++;
-                document.getElementById('opportunityCount').textContent = this.opportunityCount;
-                
-                const opportunity = {
-                    timestamp: new Date(),
-                    priceDiff: priceDiff,
-                    netProfit: netProfit,
-                    adminFees: adminFees,
-                    usdtPrice: this.prices.usdt,
-                    usdPrice: this.prices.usd
-                };
-                
-                this.displayOpportunity(opportunity);
-                this.showNotification(opportunity);
-                this.logMessage(`¡Oportunidad encontrada! Ganancia neta: ${netProfit.toFixed(2)}%`, 'success');
-            }
-
-            displayOpportunity(opportunity) {
+            displayOpportunities(opportunities) {
                 const opportunitiesList = document.getElementById('opportunitiesList');
-                const isHighProfit = opportunity.netProfit > 1.0;
+                opportunitiesList.innerHTML = '';
                 
-                const opportunityHtml = `
-                    <div class="opportunity-card ${isHighProfit ? 'high-profit' : ''}">
-                        <h4>💰 Oportunidad de Arbitraje</h4>
-                        <p><strong>Tiempo:</strong> ${opportunity.timestamp.toLocaleString()}</p>
-                        <p><strong>USDT/ARS:</strong> $${opportunity.usdtPrice.toFixed(2)} | <strong>USD/ARS:</strong> $${opportunity.usdPrice.toFixed(2)}</p>
-                        <p><strong>Diferencia:</strong> ${opportunity.priceDiff.toFixed(2)}%</p>
-                        <p><strong>Ganancia neta:</strong> <span style="font-size:1.2em">${opportunity.netProfit.toFixed(2)}%</span></p>
-                        <p><strong>Recomendación:</strong> ${this.getRecommendation(opportunity.netProfit)}</p>
-                    </div>
-                `;
-                
-                if (opportunitiesList.innerHTML.includes('No hay oportunidades')) {
-                    opportunitiesList.innerHTML = opportunityHtml;
-                } else {
-                    opportunitiesList.insertAdjacentHTML('afterbegin', opportunityHtml);
+                if (opportunities.length === 0) {
+                    opportunitiesList.innerHTML = '<p style="text-align:center; color:#666;">No hay oportunidades rentables en este momento...</p>';
+                    return;
                 }
                 
-                // Mantener solo las últimas 5 oportunidades
-                const opportunities = opportunitiesList.querySelectorAll('.opportunity-card');
-                if (opportunities.length > 5) {
-                    opportunities[opportunities.length - 1].remove();
+                let opportunitiesHtml = '';
+                
+                for (let i = 0; i < opportunities.length; i++) {
+                    const opp = opportunities[i];
+                    this.opportunityCount++;
+                    document.getElementById('opportunityCount').textContent = this.opportunityCount;
+                    
+                    const cardClass = this.getOpportunityCardClass(opp.netProfit);
+                    const recommendation = this.getRecommendation(opp.netProfit);
+                    
+                    opportunitiesHtml += '<div class="opportunity-card ' + cardClass + '">' +
+                        '<h4>💰 ' + opp.description + '</h4>' +
+                        '<p><strong>Tiempo:</strong> ' + new Date().toLocaleString() + '</p>' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">' +
+                            '<div><strong>Precio Compra:</strong><br>' + opp.buyPrice.toFixed(2) + ' ARS</div>' +
+                            '<div><strong>Precio Venta:</strong><br>' + opp.sellPrice.toFixed(2) + ' ARS</div>' +
+                        '</div>' +
+                        '<p><strong>Ganancia Bruta:</strong> <span class="price-positive">' + opp.netProfit.toFixed(2) + '%</span></p>' +
+                        '<p><strong>Recomendación:</strong> ' + recommendation + '</p>' +
+                    '</div>';
+                    
+                    this.showNotification('Nueva oportunidad', 'Ganancia: ' + opp.netProfit.toFixed(2) + '%', cardClass);
                 }
+                
+                opportunitiesList.innerHTML = opportunitiesHtml;
+                this.logMessage(`Oportunidades encontradas: ${opportunities.length}`, 'success');
+            }
+
+            getOpportunityCardClass(netProfit) {
+                if (netProfit >= 2) return 'excellent';
+                if (netProfit >= 1) return 'high-profit';
+                return '';
             }
 
             getRecommendation(netProfit) {
-                if (netProfit > 2.0) return "🔥 ¡EXCELENTE! Ejecutar inmediatamente";
-                if (netProfit > 1.0) return "✅ Muy buena oportunidad";
-                if (netProfit > 0.5) return "📈 Oportunidad moderada";
-                return "⚠️ Analizar cuidadosamente";
+                if (netProfit >= 2) return '¡Excelente oportunidad! Considera actuar rápido.';
+                if (netProfit >= 1) return 'Muy buena oportunidad. Vale la pena analizarla.';
+                return 'Oportunidad moderada. Ten en cuenta los costos.';
             }
 
-            showNotification(opportunity) {
-                const notification = document.getElementById('notification');
-                const notificationText = document.getElementById('notificationText');
-                
-                notificationText.innerHTML = `
-                    <strong>Ganancia neta: ${opportunity.netProfit.toFixed(2)}%</strong><br>
-                    USDT: ${opportunity.usdtPrice.toFixed(2)} | USD: ${opportunity.usdPrice.toFixed(2)}
-                `;
-                
-                notification.classList.add('show');
-                
-                // Alerta sonora
-                this.playNotificationSound(opportunity.netProfit);
-                
-                // Notificación del navegador
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('🚨 Oportunidad de Arbitraje USDT', {
-                        body: `Ganancia neta: ${opportunity.netProfit.toFixed(2)}% - USDT: ${opportunity.usdtPrice.toFixed(2)}`,
-                        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💰</text></svg>'
-                    });
-                }
-                
-                // Vibración en móviles
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([200, 100, 200, 100, 200]);
-                }
-                
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 10000);
-            }
-
-            playNotificationSound(netProfit) {
-                // Verificar si las alertas sonoras están activadas
-                const soundEnabled = document.getElementById('soundEnabled').value === 'true';
-                if (!soundEnabled) return;
-                
-                try {
-                    // Crear diferentes tonos según la ganancia
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    
-                    const playTone = (frequency, duration, volume = 0.3) => {
-                        const oscillator = audioContext.createOscillator();
-                        const gainNode = audioContext.createGain();
-                        
-                        oscillator.connect(gainNode);
-                        gainNode.connect(audioContext.destination);
-                        
-                        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-                        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-                        gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
-                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
-                        
-                        oscillator.start(audioContext.currentTime);
-                        oscillator.stop(audioContext.currentTime + duration);
-                    };
-                    
-                    // Sonidos diferentes según el nivel de ganancia
-                    if (netProfit > 2.0) {
-                        // Ganancia alta: Secuencia ascendente dramática + campana
-                        playTone(440, 0.2, 0.4);  // A4
-                        setTimeout(() => playTone(523, 0.2, 0.4), 100);  // C5
-                        setTimeout(() => playTone(659, 0.2, 0.4), 200);  // E5
-                        setTimeout(() => playTone(784, 0.4, 0.5), 300);  // G5
-                        setTimeout(() => playTone(1047, 0.3, 0.4), 700);  // C6 - Campana final
-                    } else if (netProfit > 1.0) {
-                        // Ganancia buena: Tono doble alegre
-                        playTone(523, 0.3, 0.4);  // C5
-                        setTimeout(() => playTone(659, 0.3, 0.4), 200);  // E5
-                        setTimeout(() => playTone(784, 0.2, 0.3), 500);  // G5
-                    } else if (netProfit > 0.5) {
-                        // Ganancia moderada: Tono doble
-                        playTone(440, 0.3, 0.3);  // A4
-                        setTimeout(() => playTone(523, 0.3, 0.3), 300);  // C5
-                    } else {
-                        // Ganancia mínima: Tono simple
-                        playTone(349, 0.4, 0.2);  // F4
-                    }
-                } catch (error) {
-                    console.log('Error reproduciendo sonido:', error);
-                    // Fallback: usar beep del sistema si está disponible
-                    if (typeof window !== 'undefined' && window.speechSynthesis) {
-                        // Alternativa usando síntesis de voz para generar un beep
-                        const utterance = new SpeechSynthesisUtterance('');
-                        utterance.volume = 0.1;
-                        utterance.rate = 10;
-                        utterance.pitch = 2;
-                        window.speechSynthesis.speak(utterance);
-                    }
-                }
-            }
-
-            isInActiveHours() {
-                const schedule = document.getElementById('schedule').value;
-                const now = new Date();
-                const hour = now.getHours();
-                
-                if (schedule === 'always') return true;
-                
-                if (schedule === 'business') {
-                    return hour >= 9 && hour < 18;
-                }
-                
-                if (schedule === 'custom') {
-                    const customHours = document.getElementById('customHours').value;
-                    if (customHours) {
-                        const [start, end] = customHours.split('-').map(time => {
-                            const [h, m] = time.trim().split(':');
-                            return parseInt(h);
-                        });
-                        return hour >= start && hour < end;
-                    }
-                }
-                
-                return true;
-            }
-
-            calculateNextCheckTime() {
-                const interval = parseInt(document.getElementById('interval').value) * 1000;
-                this.nextCheckTime = new Date(Date.now() + interval);
-                this.updateNextCheckDisplay();
-            }
-
-            updateNextCheckDisplay() {
-                if (this.nextCheckTime) {
-                    document.getElementById('nextCheck').textContent = this.nextCheckTime.toLocaleTimeString();
-                }
-            }
-
-            async start() {
+            start() {
                 if (this.isRunning) return;
-                
                 this.isRunning = true;
-                document.getElementById('botStatus').textContent = '🟢 Activo';
-                document.getElementById('startText').innerHTML = '<div class="loading"></div> Ejecutándose...';
-                
-                this.logMessage('Bot iniciado correctamente', 'success');
-                
-                const runCheck = async () => {
-                    if (!this.isRunning) return;
-                    
-                    if (this.isInActiveHours()) {
-                        await this.checkPrices();
-                    } else {
-                        this.logMessage('Fuera del horario configurado - Esperando...', 'info');
-                    }
-                    
-                    this.calculateNextCheckTime();
-                };
-                
-                // Primera consulta inmediata
-                await runCheck();
-                
-                // Configurar intervalos
+                this.checkAllPrices();
                 const interval = parseInt(document.getElementById('interval').value) * 1000;
-                this.intervalId = setInterval(runCheck, interval);
+                this.intervalId = setInterval(() => this.checkAllPrices(), interval);
+                this.updateStatus('▶️ Corriendo');
+                this.logMessage('Monitor iniciado.', 'success');
+                document.getElementById('startText').innerHTML = 'Iniciando... <span class="loading"></span>';
+                document.getElementById('startBot').disabled = true;
             }
 
             stop() {
                 if (!this.isRunning) return;
-                
+                clearInterval(this.intervalId);
                 this.isRunning = false;
-                if (this.intervalId) {
-                    clearInterval(this.intervalId);
-                    this.intervalId = null;
-                }
-                
-                document.getElementById('botStatus').textContent = '⏸️ Detenido';
-                document.getElementById('startText').textContent = '🚀 Iniciar Bot';
-                document.getElementById('nextCheck').textContent = '--:--';
-                
-                this.logMessage('Bot detenido', 'warning');
+                this.updateStatus('⏸️ Detenido');
+                this.logMessage('Monitor detenido.', 'info');
+                document.getElementById('startText').innerHTML = '🚀 Iniciar Monitor';
+                document.getElementById('startBot').disabled = false;
+            }
+
+            updateStatus(status) {
+                document.getElementById('botStatus').textContent = status;
             }
 
             logMessage(message, type = 'info') {
                 const logContainer = document.getElementById('logContainer');
-                const timestamp = new Date().toLocaleTimeString();
                 const logEntry = document.createElement('div');
-                logEntry.className = `log-entry ${type}`;
-                logEntry.textContent = `[${timestamp}] ${message}`;
-                
-                logContainer.insertBefore(logEntry, logContainer.firstChild);
-                
-                // Mantener solo los últimos 50 logs
-                const logs = logContainer.querySelectorAll('.log-entry');
-                if (logs.length > 50) {
-                    logs[logs.length - 1].remove();
+                const timestamp = new Date().toLocaleTimeString();
+                logEntry.className = 'log-entry ' + type;
+                logEntry.textContent = timestamp + ' - ' + message;
+                logContainer.prepend(logEntry);
+                if (logContainer.children.length > 50) {
+                    logContainer.removeChild(logContainer.lastChild);
                 }
             }
-        }
 
-        // Instancia global del bot
-        const arbitrageBot = new USDTArbitrageBot();
-
-        // Funciones globales para los botones
-        async function startBot() {
-            await arbitrageBot.start();
-        }
-
-        function stopBot() {
-            arbitrageBot.stop();
-        }
-
-        function testNotification() {
-            arbitrageBot.showNotification({
-                netProfit: 1.25,
-                usdtPrice: 1025.50,
-                usdPrice: 1010.25
-            });
-        }
-
-        function testSound() {
-            // Probar diferentes niveles de sonido
-            const testProfits = [0.3, 0.7, 1.5, 2.5];
-            let index = 0;
-            
-            const playNext = () => {
-                if (index < testProfits.length) {
-                    console.log(`Probando sonido para ganancia: ${testProfits[index]}%`);
-                    arbitrageBot.playNotificationSound(testProfits[index]);
-                    index++;
-                    setTimeout(playNext, 1500);
-                } else {
-                    arbitrageBot.logMessage('Test de sonidos completado', 'info');
+            showNotification(title, message, cardClass = '') {
+                if (document.getElementById('soundEnabled').value === 'true') {
+                    const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+                    audio.play();
                 }
-            };
-            
-            arbitrageBot.logMessage('Iniciando test de sonidos...', 'info');
-            playNext();
+                
+                const notification = document.getElementById('notification');
+                notification.className = 'notification ' + cardClass;
+                document.getElementById('notificationText').textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 5000);
+            }
         }
 
-        // Inicializar el bot cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', function() {
-            // El bot ya está inicializado arriba
-            console.log('Bot de arbitraje USDT inicializado correctamente');
-        });
+        const bot = new USDTArbitrageMonitor();
 
-        // Actualizar contador de próxima consulta cada segundo
-        setInterval(() => {
-            if (typeof arbitrageBot !== 'undefined' && arbitrageBot.isRunning && arbitrageBot.nextCheckTime) {
-                arbitrageBot.updateNextCheckDisplay();
-            }
-        }, 1000);
-
-        // Mantener la aplicación activa en móviles
-        document.addEventListener('visibilitychange', () => {
-            if (typeof arbitrageBot !== 'undefined' && !document.hidden && arbitrageBot.isRunning) {
-                arbitrageBot.logMessage('Aplicación reactivada', 'info');
-            }
-        });
+        window.startBot = () => bot.start();
+        window.stopBot = () => bot.stop();
     </script>
 </body>
 </html>
