@@ -21,13 +21,13 @@
   <script>
     const THRESHOLD = 1.5; // porcentaje mínimo de spread
 
-    async function getSpotPrice(symbol="USDTUSDT") {
-      const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      return parseFloat(data.price);
-    }
-
+    async function getSpotPrice(symbol="USDTARS") {
+  const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Error en Spot API");
+  const data = await res.json();
+  return parseFloat(data.price);
+}
     async function getP2PPrice() {
       const url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search";
       const payload = {
@@ -81,3 +81,4 @@
   </script>
 </body>
 </html>
+
